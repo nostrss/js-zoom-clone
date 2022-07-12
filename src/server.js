@@ -23,26 +23,31 @@ const server = http.createServer(app);
 // webSocket 서버만들기
 const wss = new WebSocket.Server({ server });
 
-function handleConnection(socket) {
-  console.log(socket);
-  socket.send('hello');
-}
+const sockets = [];
 
 wss.on('connection', (socket) => {
+  sockets.push(socket);
+  socket['nickname'] = 'Unknown';
   // 브라우저와 서버가 연결됐을 때
-  console.log('Connected to Browser✅');
+  // console.log('Connected to Browser✅');
 
   // 브라우저가 꺼졌을때, 연결이 끊겼을때
   socket.on('close', () => console.log('Disconnected from thr Browser'));
 
   // 브라우저에서 서버로 메시지가 도착했을때
-  socket.on('message', (message) => {
-    const messageConvert = message.toString('utf8');
-    console.log(messageConvert);
+  socket.on('message', (msg) => {
+    const messageConvert = msg.toString('utf8');
+    const message = JSON.parse(messageConvert);
+    switch (message.type) {
+      case 'new_message':
+        sockets.forEach((eachSocket) =>
+          eachSocket.send(`${socket.nickname}: ${message.payload}`)
+        );
+      case 'nickname':
+        console.log(message.payload);
+        socket['nickname'] = message.payload;
+    }
   });
-
-  // 브라우저로 메시지 보내기
-  socket.send('hello🤚 from server');
 });
 
 server.listen(3000, handleListen);
